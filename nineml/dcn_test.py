@@ -8,12 +8,11 @@ else:
     from pype9.cells.nest import CellMetaClass  # @Reimport
 import os.path
 import sys
-#import pylab
-#import numpy as np
 import matplotlib.pyplot as plt
 
-
 h.load_file("multisplit.hoc")
+LIBNRNMECHPATH = "/home/nebula/git/CerebellarNuclei/x86_64/.libs/libnrnmech.so"
+
 
 class MultiCompartmentSplit:
     def __init__(self, mc):
@@ -167,7 +166,7 @@ class MultiCompartmentSplit:
             t = self.vec_t.as_numpy()
             v = self.vec_v.as_numpy()
             plt.plot(t, v, color='b')
-            plt.title('simulation result with '+str(self.pc.nhost())+" CPU cores")
+            plt.title('simulation result with '+str(int(self.pc.nhost()))+" CPU cores")
             plt.xlabel('time [msec]')
             plt.ylabel('Membrane Potential [mv]')
             plt.axis(xmin=0, xmax=max(t), ymin=-80, ymax=10)
@@ -176,7 +175,7 @@ class MultiCompartmentSplit:
 
 
 def main():
-    h('{nrn_load_dll("/home/nebula/git/CerebellarNuclei/x86_64/.libs/libnrnmech.so")}')
+    h('{nrn_load_dll("'+LIBNRNMECHPATH+'")}')
 
     dcn = nineml.read(os.path.join(
         os.environ['HOME'], 'git', 'CerebellarNuclei', '9ml',
