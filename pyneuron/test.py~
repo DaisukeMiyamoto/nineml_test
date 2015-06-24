@@ -1,4 +1,0 @@
-import os
-import nineml
-from neuron import h
-
