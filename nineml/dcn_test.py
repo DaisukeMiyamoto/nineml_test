@@ -27,15 +27,25 @@ class MultiCompartmentSplit:
     #def show_mech_cost(self):
         
 
+    def show_all_sections(self):
+        for sec in self.sections:
+            h.psection(sec=sec)
+
     def insert_domain(self, sec, domain):
         modlist = []
         for subcomp in domain.dynamics.subcomponents:
             modlist.append(subcomp.name)
             sec.insert(subcomp.name)
-        #print modlist
-        #for domain in mc.domains:
-        #    print domain
-        #    for comp in domain.dynamics.subcomponents:
+            for prop in subcomp.dynamics.properties:
+                ############################################
+                # this is not good and old style
+                #
+                sec.push()
+                h(prop.name+'_'+subcomp.name+' = '+str(prop.value))
+                h.pop_section()
+                # 
+                #sec.setter(prop.name+'_'+subcomp.name, prop.value)
+                ############################################
 
     def check_complexity_file(self):
         # show mechanisms
@@ -48,7 +58,7 @@ class MultiCompartmentSplit:
         ###################################################
         # set up sections
         self.sections = []
-        # for section name in hoc
+        # old style, but it is need for section_name in hoc
         h(self.section_def_template % (self.name, len(self.tree)))
         for sec in h.allsec():
             self.sections.append(sec)
@@ -62,28 +72,28 @@ class MultiCompartmentSplit:
             if(parent != 0):
                 sec.connect(self.sections[parent-1], 1, 0)
 
-        ###################################################
-        # insert phisiology
+        self.num_compartment = 0
+        for sec in h.allsec():
+            self.num_compartment += 1
+
+        self.setup_time += h.startsw() - start
+
+    def setup_mechanisms(self):
+        start = h.startsw()
         for i,sec in enumerate(self.sections):
             #print "set %s to %d" % (mc.mapping.domain_name(i), i)
             self.insert_domain(sec, self.mc.domain(i))
         
-        #for domain in mc.domains:
-        #    for comp in domain.dynamics.subcomponents:
+        self.setup_time += h.startsw() - start
         
-        ###################################################
-        # split
+
+    def multisplit(self):
+        start = h.startsw()
         self.complexity = h.multisplit()
+        self.num_compartment = 0
         for sec in h.allsec():
             self.num_compartment += 1
 
-        ###################################################
-        # debug
-        #print self.tree
-
-        
-        ###################################################
-        # timer
         self.setup_time += h.startsw() - start
 
 
@@ -135,6 +145,9 @@ def main():
 
     mc.check_complexity_file()
     mc.setup_sections()
+    mc.setup_mechanisms()
+    mc.multisplit()
+    mc.show_all_sections()
     mc.run_simulation()
     mc.show_info()
 
