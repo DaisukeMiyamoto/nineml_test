@@ -1,0 +1,72 @@
+{load_file("nrngui.hoc")}
+{load_file("netparmpi.hoc")}
+{load_file("binfo.hoc")}
+
+{load_file("myloadbal.hoc")}
+{load_file("loadSwc.hoc")}
+{load_file("mcomplex.hoc")}
+
+func multisplit() {\
+     local c, cm, maxfactor\
+     localobj b, ms, vs, bi, cb, nc, _pc, nil
+
+     b = new MyLoadBalance()
+     //b = $o1
+     _pc = new ParallelContext()
+     maxfactor = 0.3
+
+     read_mcomplex(b)
+     if (_pc.nhost > 1) {
+	ms = new Vector(100)
+	if (_pc.id == 0) {
+		c = b.cell_complexity()
+		cm = c * maxfactor / _pc.nhost
+		//print "c = ", c, "  maxfactor = ", maxfactor, "  cm = ", cm
+		b.multisplit(0, cm, ms)
+		//bprint(ms)
+         }
+     	 _pc.broadcast(ms, 0)
+     	 vs = new VectorStream(ms)
+     	 bi = new BalanceInfo()
+     	 bi.msgid = 1e6
+     	 bi.nhost = _pc.nhost
+     	 bi.ihost = _pc.id
+     	 bi.bilist.append(new CellBalanceInfo(vs))
+     	 bi.mymetis2(_pc.nhost)
+
+     	 //if (_pc.id == 0) { bi.stat() }
+
+     	 cb = bi.bilist.object(0)
+     	 nc = new NetCon(&v(.5), nil)
+     	 cb.multisplit(nc, 100, _pc, _pc.id)
+     }
+     //printf("%d cpu complexity %g\n", _pc.id, b.cpu_complexity())
+     cplx = b.cpu_complexity()
+
+     return(cplx)
+}
+
+/*
+proc bprint() {\
+     local i, i1, i2, i3, n1, n2, n3, np
+	np = 0
+	i = -1
+	printf("%d %g", $o1.x[i+=1], $o1.x[i+=1])
+	n1 = $o1.x[i+=1] printf(" %d\n", n1)
+	for i1 = 0, n1 - 1 {
+		n2 = $o1.x[i+=1]
+		np += n2
+		printf("  %d\n", n2)
+		for i2 = 0, n2 - 1 {
+			printf("    %g", $o1.x[i+=1])
+			n3 = $o1.x[i+=1]
+			printf(" %d\n     ", n3)
+			for i3=0, n3 - 1 {
+				printf(" %d", $o1.x[i+=1])
+			}
+			printf("\n")
+		}
+	}
+	printf(" %d pieces\n", np)
+}
+*/

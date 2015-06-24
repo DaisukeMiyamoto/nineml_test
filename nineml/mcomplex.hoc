@@ -1,0 +1,61 @@
+// make sure mcomplex.dat exists
+proc chk_mcomplex() {\
+     localobj f
+
+     f = new File("mcomplex.dat")
+     if (f.ropen()) {
+	f.close()
+     }else{
+	mcomplex()
+     }
+}		
+
+proc mcomplex() {local i, j localobj f, lb, mt, s, pc
+	printf("generate mcomplex\n")
+	lb = new MyLoadBalance()
+
+	// calculate complexity of each Mechanism
+	//lb.ExperimentalMechComplex()
+
+	pc = new ParallelContext()
+	f = new File()
+
+	if(pc.id==0){
+		f.wopen("mcomplex.dat")
+		for j=0, 1 {
+			s = new String()
+			mt = new MechanismType(j)
+			for i=0, mt.count-1 {
+				mt.select(i)
+				mt.selected(s.s)
+				f.printf("%g %s\n", lb.m_complex_[j].x[i], s.s)
+				printf("%g %s\n", lb.m_complex_[j].x[i], s.s)
+			}
+		}
+		f.close
+	}
+}
+
+proc read_mcomplex() {local i, j, k localobj f, lb, mt, s, s2
+	lb = $o1
+	f = new File()
+	if (!f.ropen("mcomplex.dat")) { return }
+	for j=0, 1 {
+		k = 0
+		s = new String()
+		s2 = new String()
+		mt = new MechanismType(j)
+		for i=0, mt.count-1 {
+			lb.m_complex_[j]
+			c = f.scanvar()
+			f.scanstr(s2.s)
+			mt.select(i)
+			mt.selected(s.s)
+			if (strcmp(s.s, s2.s) != 0) { execerror(s2.s, " not loaded") }
+			lb.m_complex_[j].x[k] = c
+			k += 1
+		}
+	}
+	f.close
+
+}

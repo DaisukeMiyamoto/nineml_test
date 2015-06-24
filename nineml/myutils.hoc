@@ -1,0 +1,11 @@
+
+proc printMechanisms() { local i localobj mt
+     strdef name
+     mt = new MechanismType(0)
+
+     for i=0, mt.count-1 {
+     	 mt.select(i)
+	 mt.selected(name)
+	 printf("[%s]\n", name)
+     }
+}
