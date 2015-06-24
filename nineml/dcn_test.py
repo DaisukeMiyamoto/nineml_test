@@ -8,7 +8,10 @@ else:
     from pype9.cells.nest import CellMetaClass  # @Reimport
 import os.path
 import sys
-import pylab
+#import pylab
+#import numpy as np
+import matplotlib.pyplot as plt
+
 
 h.load_file("multisplit.hoc")
 
@@ -161,8 +164,15 @@ class MultiCompartmentSplit:
 
     def show_plot(self):
         if(self.vec_v!=0):
-            pylab.plot(self.vec_t, self.vec_v)
-            pylab.show()
+            t = self.vec_t.as_numpy()
+            v = self.vec_v.as_numpy()
+            plt.plot(t, v, color='b')
+            plt.title('simulation result with '+str(self.pc.nhost())+" CPU cores")
+            plt.xlabel('time [msec]')
+            plt.ylabel('Membrane Potential [mv]')
+            plt.axis(xmin=0, xmax=max(t), ymin=-80, ymax=10)
+            plt.show()
+            
 
 
 def main():
