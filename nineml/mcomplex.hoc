@@ -11,7 +11,7 @@ proc chk_mcomplex() {\
 }		
 
 proc mcomplex() {local i, j localobj f, lb, mt, s, pc
-	printf("generate mcomplex\n")
+	//printf("generate mcomplex\n")
 	lb = new MyLoadBalance()
 
 	// calculate complexity of each Mechanism
@@ -29,7 +29,7 @@ proc mcomplex() {local i, j localobj f, lb, mt, s, pc
 				mt.select(i)
 				mt.selected(s.s)
 				f.printf("%g %s\n", lb.m_complex_[j].x[i], s.s)
-				printf("%g %s\n", lb.m_complex_[j].x[i], s.s)
+				//printf("%g %s\n", lb.m_complex_[j].x[i], s.s)
 			}
 		}
 		f.close

@@ -6,9 +6,12 @@ if simulator == 'neuron':
 else:
     from pype9.cells.nest import CellMetaClass  # @Reimport
 import os.path
+import sys
 from neuron import h
 
-class nineml_multicompartment:
+h.load_file("multisplit.hoc")
+
+class MultiCompartmentSplit:
     def __init__(self, mc):
         self.pc = h.ParallelContext()
         self.mc = mc
@@ -20,6 +23,9 @@ class nineml_multicompartment:
         self.setup_time = 0
         self.calc_time = 0
         self.num_compartment = 0
+
+    #def show_mech_cost(self):
+        
 
     def insert_domain(self, sec, domain):
         modlist = []
@@ -33,8 +39,9 @@ class nineml_multicompartment:
 
     def check_complexity_file(self):
         # show mechanisms
-        h.chk_mcomplex()
-        
+        #h.chk_mcomplex()
+        h.mcomplex()
+
     def setup_sections(self):
         start = h.startsw()
         
@@ -47,6 +54,7 @@ class nineml_multicompartment:
             self.sections.append(sec)
 
 
+        ###################################################
         # connect sections
         for i,sec in enumerate(self.sections):
             parent = self.tree[i]
@@ -54,7 +62,7 @@ class nineml_multicompartment:
             if(parent != 0):
                 sec.connect(self.sections[parent-1], 1, 0)
 
-        ##############################################################
+        ###################################################
         # insert phisiology
         for i,sec in enumerate(self.sections):
             #print "set %s to %d" % (mc.mapping.domain_name(i), i)
@@ -63,15 +71,19 @@ class nineml_multicompartment:
         #for domain in mc.domains:
         #    for comp in domain.dynamics.subcomponents:
         
-        ##############################################################
+        ###################################################
         # split
         self.complexity = h.multisplit()
         for sec in h.allsec():
             self.num_compartment += 1
 
+        ###################################################
         # debug
-        print self.tree
+        #print self.tree
 
+        
+        ###################################################
+        # timer
         self.setup_time += h.startsw() - start
 
 
@@ -79,26 +91,33 @@ class nineml_multicompartment:
         return 0.0
 
     def show_info(self):
+        sys.stdout.flush()
+        self.pc.barrier()
 
         if(self.pc.id()==0):
             print "\n##############################################################"
             print "# setup time = %.2f sec" % self.setup_time
             print "# calc time = %.2f sec" % self.calc_time
             print "#"
-
+        sys.stdout.flush()
+        self.pc.barrier()
 
         for i in range(int(self.pc.nhost())):
-            self.pc.barrier()
             if(i==self.pc.id()):
                 print "# %d/%d : %d compartment (%d)" % (self.pc.id(), self.pc.nhost(), self.num_compartment, self.complexity)
-        print "#"
+            sys.stdout.flush()
+            self.pc.barrier()
+
+        if(self.pc.id()==0):
+            print "#"
 
     def show_topology(self, id):
         if id < 0:
             for i in range(int(self.pc.nhost())):
-                pc.barrier()
                 if(i==pc.id()):
                     h.topology()
+                sys.stdout.flush()
+                self.pc.barrier()
         else:
             if(id == self.pc.id()):
                 h.topology()
@@ -106,13 +125,12 @@ class nineml_multicompartment:
 
 def main():
     h('{nrn_load_dll("/home/nebula/git/CerebellarNuclei/x86_64/.libs/libnrnmech.so")}')
-    h.load_file("multisplit.hoc")
 
     dcn = nineml.read(os.path.join(
         os.environ['HOME'], 'git', 'CerebellarNuclei', '9ml',
         'dcn.xml'))['DCN']
     
-    mc = nineml_multicompartment(dcn)
+    mc = MultiCompartmentSplit(dcn)
     #dcn_cell = CellMetaClass(dcn)
 
     mc.check_complexity_file()
