@@ -3,11 +3,12 @@ simulator = 'neuron'
 import nineml
 if simulator == 'neuron':
     from pype9.cells.neuron import CellMetaClass  # @UnusedImport
+    from neuron import h
 else:
     from pype9.cells.nest import CellMetaClass  # @Reimport
 import os.path
 import sys
-from neuron import h
+import pylab
 
 h.load_file("multisplit.hoc")
 
@@ -24,14 +25,31 @@ class MultiCompartmentSplit:
         self.calc_time = 0
         self.num_compartment = 0
 
+        self.tstop = 2000           # [msec]
+
+        self.vec_v = 0              # one vec_v is not good 
+        self.vec_t = 0
+
     #def show_mech_cost(self):
         
 
+    def set_vec_t(self):
+        self.vec_t = h.Vector()
+        self.vec_t.record(h._ref_t)
+
+    def set_vec_v(self, rec_sec_name):
+        for sec in h.allsec():
+            if(sec.name() == rec_sec_name):
+                print "Record Compartment = %s in #%d" % (rec_sec_name, self.pc.id())
+                self.vec_v = h.Vector()
+                self.vec_v.record(sec(0.5)._ref_v)
+    
     def show_all_sections(self):
         for sec in self.sections:
             h.psection(sec=sec)
 
     def insert_domain(self, sec, domain):
+        start = h.startsw()
         modlist = []
         for subcomp in domain.dynamics.subcomponents:
             modlist.append(subcomp.name)
@@ -46,6 +64,7 @@ class MultiCompartmentSplit:
                 # 
                 #sec.setter(prop.name+'_'+subcomp.name, prop.value)
                 ############################################
+        self.setup_time += h.startsw() - start
 
     def check_complexity_file(self):
         # show mechanisms
@@ -90,6 +109,9 @@ class MultiCompartmentSplit:
     def multisplit(self):
         start = h.startsw()
         self.complexity = h.multisplit()
+        self.pc.multisplit()
+        self.pc.set_maxstep(10)
+
         self.num_compartment = 0
         for sec in h.allsec():
             self.num_compartment += 1
@@ -98,7 +120,11 @@ class MultiCompartmentSplit:
 
 
     def run_simulation(self):
-        return 0.0
+        start = h.startsw()
+        h.stdinit()
+        self.pc.psolve(self.tstop)
+        self.pc.barrier()
+        self.calc_time = h.startsw() - start
 
     def show_info(self):
         sys.stdout.flush()
@@ -133,6 +159,12 @@ class MultiCompartmentSplit:
                 h.topology()
         
 
+    def show_plot(self):
+        if(self.vec_v!=0):
+            pylab.plot(self.vec_t, self.vec_v)
+            pylab.show()
+
+
 def main():
     h('{nrn_load_dll("/home/nebula/git/CerebellarNuclei/x86_64/.libs/libnrnmech.so")}')
 
@@ -147,10 +179,15 @@ def main():
     mc.setup_sections()
     mc.setup_mechanisms()
     mc.multisplit()
-    mc.show_all_sections()
-    mc.run_simulation()
-    mc.show_info()
+    mc.set_vec_t()
+    mc.set_vec_v('DCN[100]')
+    #mc.show_all_sections()
 
+    
+    mc.run_simulation()
+
+    mc.show_info()
+    mc.show_plot()
 
 if __name__ == '__main__':
     main()
